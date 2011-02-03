@@ -1,0 +1,20 @@
+--- Config.pm	2009-09-04 09:37:13.000000000 -0400
++++ Config.pm.new	2009-09-04 09:36:54.000000000 -0400
+@@ -48,7 +48,7 @@
+   'patch' => q[/usr/bin/patch],
+   'prefer_installer' => q[MB],
+   'prefs_dir' => q[/root/.cpan/prefs],
+-  'prerequisites_policy' => q[ask],
++  'prerequisites_policy' => q[follow],
+   'scan_cache' => q[atstart],
+   'shell' => q[/bin/bash],
+   'show_unparsable_versions' => q[0],
+@@ -60,7 +60,7 @@
+   'term_ornaments' => q[1],
+   'test_report' => q[0],
+   'unzip' => q[],
+-  'urllist' => [],
++  'urllist' => [q[ftp://mirror.datapipe.net/pub/CPAN/]],
+   'use_sqlite' => q[0],
+   'wget' => q[/usr/bin/wget],
+   'yaml_load_code' => q[0],
