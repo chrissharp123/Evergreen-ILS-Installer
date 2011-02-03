@@ -14,18 +14,62 @@
 # GNU General Public License for more details.
 # -----------------------------------------------------------------------
 
-DOJO_VERSION='1.3.2';
+
+# Check that we are root or are using sudo
+[ $(whoami) != 'root' ] && echo 'Must run as root or with sudo' && exit;
 
 # If you change the jabber password, you will need to 
 # edit opensrf_core.xml and srfsh.xml accordingly
-JABBER_PASSWORD='password'
+clear
+echo "This script will install OpenSRF and Evergreen on Debian 'lenny'."
+echo 
+#read -p "Which Linux distribution (currently supported: debian-lenny, ubuntu-lucid)? " DISTRO
+read -p "Which version of OpenSRF (e.g. '1.6.2')? " OSRF_VERSION
+read -p "Which version of Evergreen-ILS (eg. '1.6.1.4)? " EG_VERSION
+read -p "What would you like to use for your Jabber password? " JABBER_PASSWORD
 
+DISTRO="debian-lenny"
+OSRF_TGZ="opensrf-$OSRF_VERSION.tar.gz"
+EG_TGZ="Evergreen-ILS-$EG_VERSION.tar.gz"
+OSRF_URL="http://evergreen-ils.org/downloads/$OSRF_TGZ"
+EG_URL="http://evergreen-ils.org/downloads/$EG_TGZ"
+
+# Define some directories
 BASE_DIR=$PWD
+WORKING_DIR="/home/opensrf"
+EG_DIR="$WORKING_DIR/Evergreen-ILS-$EG_VERSION"
+OSRF_DIR="$WORKING_DIR/opensrf-$OSRF_VERSION"
+SC_BUILD="rel_$(echo $EG_VERSION | tr "." "_")"
+
+# copy the Jabber password into opensrf_core.xml.patch and srfsh.xml.patch
+if [ ! -e "$BASE_DIR/opensrf_core.xml.patch" ]
+	then	
+cp "$BASE_DIR/opensrf_core.xml.patch.example" "$BASE_DIR/opensrf_core.xml.patch" && sed -i "s^OpenSRF_Password^$JABBER_PASSWORD^g" "$BASE_DIR/opensrf_core.xml.patch" || echo "Could not create opensrf_core.xml.patch."
+	else
+echo "opensrf_core.xml.patch has already been created - please review that its settings are correct"
+sleep 2
+vi "$BASE_DIR/opensrf_core.xml.patch"
+fi
+
+if [ ! -e "$BASE_DIR/srfsh.xml.patch" ]
+        then
+cp "$BASE_DIR/srfsh.xml.patch.example" "$BASE_DIR/srfsh.xml.patch" && sed -i "s^OpenSRF_Password^$JABBER_PASSWORD^g" "$BASE_DIR/srfsh.xml.patch" || echo "Could not create srfsh.xml.patch."
+        else
+echo "srfsh.xml.patch.example has already been created - please review that its settings are correct"
+sleep 2
+vi "$BASE_DIR/srfsh.xml.patch"
+fi
+
+# customize the hosts file and move it into place
+sed -i "s^hostname^$(hostname -s)^g" "$BASE_DIR/hosts.template"
+sed -i "s^domain^$(hostname -d)^g" "$BASE_DIR/hosts.template"
+mv /etc/hosts /etc/hosts.orig
+mv "$BASE_DIR/hosts.template" /etc/hosts
 
 # And they're off...
 
 
-# Make sure the system is configured to use UTF-8.  Otherwise, Postges setup will fail
+# Make sure the system is configured to use UTF-8.  Otherwise, Postgres setup will fail
 if [[ ! $LANG =~ "UTF-8" ]]; then
     cat <<EOF
     Your system locale is not configured to use UTF-8.  This will cause problems with the PostgreSQL installation.  
@@ -77,13 +121,23 @@ if [ ! "$(grep datapipe /etc/perl/CPAN/Config.pm)" ]; then
 fi;
 
 # Install pre-reqs
-mkdir -p /usr/src/evergreen; 
-cd /usr/src/evergreen;
-wget 'http://svn.open-ils.org/trac/OpenSRF/export/HEAD/trunk/src/extras/Makefile.install'      -O Makefile.install.osrf
-wget 'http://svn.open-ils.org/trac/ILS/export/HEAD/trunk/Open-ILS/src/extras/Makefile.install' -O Makefile.install.ils
-make -f Makefile.install.osrf debian-lenny
-make -f Makefile.install.ils  debian-lenny
-make -f Makefile.install.ils  install_pgsql_server_debs_83
+OSRF_COMMAND="
+wget $OSRF_URL;
+wget $EG_URL;
+tar xzf $OSRF_TGZ;
+tar xzf $EG_TGZ;"
+su - opensrf sh -c "$OSRF_COMMAND"
+cd $OSRF_DIR || echo "Cannot cd to OpenSRF directory.";
+# wget 'http://svn.open-ils.org/trac/OpenSRF/export/HEAD/trunk/src/extras/Makefile.install'      -O Makefile.install.osrf
+# wget 'http://svn.open-ils.org/trac/ILS/export/HEAD/trunk/Open-ILS/src/extras/Makefile.install' -O Makefile.install.ils
+make -f src/extras/Makefile.install $DISTRO
+cd $EG_DIR || echo "Cannot cd to Evergreen-ILS directory." 
+make -f Open-ILS/src/extras/Makefile.install $DISTRO
+if [ "$DISTRO" == "debian-lenny" ]; then
+make -f Open-ILS/src/extras/Makefile.install install_pgsql_server_debs_83
+elif [ "$DISTRO" == "ubuntu-lucid" ]; then
+make -f Open-ILS/src/extras/Makefile.install install_pgsql_server_debs_84
+fi
 
 
 # Patch Ejabberd and register users
@@ -103,40 +157,31 @@ if [ ! "$(grep 'public.localhost' /etc/ejabberd/ejabberd.cfg)" ]; then
 fi;
 
 
-# Build and install OpenSRF
-OSRF_COMMAND='
-mkdir /home/opensrf/OpenSRF;
-mkdir /home/opensrf/ILS;
-svn co svn://svn.open-ils.org/OpenSRF/trunk /home/opensrf/OpenSRF/trunk;
-svn co svn://svn.open-ils.org/ILS/trunk     /home/opensrf/ILS/trunk;
-cd /home/opensrf/OpenSRF/trunk;
-./autogen.sh;
+OSRF_COMMAND="
+cd $OSRF_DIR;
 ./configure --prefix=/openils --sysconfdir=/openils/conf;
-make;'
-
+make;"
 su - opensrf sh -c "$OSRF_COMMAND"
-cd /home/opensrf/OpenSRF/trunk
+cd "$OSRF_DIR"
 make install
 
 # Build and install the ILS
-OSRF_COMMAND='
-cd /home/opensrf/ILS/trunk;
-./autogen.sh;
+OSRF_COMMAND="
+cd $EG_DIR;
 ./configure --prefix=/openils --sysconfdir=/openils/conf;
-make;'
+make;"
 
 su - opensrf sh -c "$OSRF_COMMAND"
-cd /home/opensrf/ILS/trunk;
-make install
+cd "$EG_DIR";
+make STAFF_CLIENT_BUILD_ID=$SC_BUILD install
 cp /openils/conf/oils_web.xml.example     /openils/conf/oils_web.xml
 cp /openils/conf/opensrf.xml.example      /openils/conf/opensrf.xml
 cp /openils/conf/opensrf_core.xml.example /openils/conf/opensrf_core.xml
-
-# fetch and install Dojo
-cd /tmp;
-wget "http://download.dojotoolkit.org/release-$DOJO_VERSION/dojo-release-$DOJO_VERSION.tar.gz";
-tar -zxf dojo-release-$DOJO_VERSION.tar.gz;
-cp -r dojo-release-$DOJO_VERSION/* /openils/var/web/js/dojo/;
+cp /openils/conf/srfsh.xml.example	  /home/opensrf/.srfsh.xml
+cd /openils/var/web/xul
+ln -sf $SC_BUILD/server server
+patch -p0 < $BASE_DIR/opensrf_core.xml.patch || echo "Could not patch opensrf_core.xml."; 
+patch -p0 < $BASE_DIR/srfsh.xml.patch || echo "Could not patch srfsh.xml."; 
 
 # give it all to opensrf
 chown -R opensrf:opensrf /openils
@@ -144,6 +189,8 @@ chown -R opensrf:opensrf /openils
 # copy srfsh config into place
 cp /openils/conf/srfsh.xml.example /home/opensrf/.srfsh.xml;
 chown opensrf:opensrf /home/opensrf/.srfsh.xml;
+
+
 
 # Create the DB
 PG_COMMAND='
@@ -159,7 +206,7 @@ createuser -P -s evergreen;'
 su - postgres sh -c "$PG_COMMAND"
 
 # Apply the DB schema
-cd /home/opensrf/ILS/trunk;
+cd $EG_DIR;
 perl Open-ILS/src/support-scripts/eg_db_config.pl --update-config \
     --service all --create-schema --create-bootstrap --create-offline \
     --user evergreen --password evergreen --hostname localhost --database evergreen
@@ -181,10 +228,22 @@ a2enmod ssl
 a2enmod rewrite
 a2enmod expires 
 
+# patch the apache files:
+patch -p0 < $BASE_DIR/eg.conf.patch
+patch -p0 < $BASE_DIR/envvars.patch
+patch -p0 < $BASE_DIR/apache2.conf.patch
+
+# disable default site and enable Evergreen
+a2dissite default
+a2ensite eg.conf
+
+echo "Restarting apache with new config...."
+/etc/init.d/apache2 restart
+
 if [ ! "$(grep 'public.localhost' /etc/hosts)" ]; then
     cat <<EOF
 
-* Add these lines to /etc/hosts.
+* The host file was not changed correctly.  Add these lines to /etc/hosts.
 
 127.0.1.2   public.localhost    public
 127.0.1.3   private.localhost   private
@@ -209,8 +268,4 @@ osrf_ctl.sh -l -a start_c      && sleep  3;
 # as opensrf user
 echo "request open-ils.cstore open-ils.cstore.direct.actor.user.retrieve 1" | srfsh
 
-* Now finish configuring Apache
-
 EOF
-
-
