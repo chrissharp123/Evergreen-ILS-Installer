@@ -185,9 +185,6 @@ patch -p0 < $BASE_DIR/srfsh.xml.patch || echo "Could not patch srfsh.xml.";
 
 # give it all to opensrf
 chown -R opensrf:opensrf /openils
-
-# copy srfsh config into place
-cp /openils/conf/srfsh.xml.example /home/opensrf/.srfsh.xml;
 chown opensrf:opensrf /home/opensrf/.srfsh.xml;
 
 
