@@ -1,0 +1,10 @@
+--- envvars.orig	2011-01-31 07:01:07.000000000 -0500
++++ /etc/apache2/envvars	2011-01-31 07:01:27.000000000 -0500
+@@ -3,6 +3,6 @@
+ # Since there is no sane way to get the parsed apache2 config in scripts, some
+ # settings are defined via environment variables and then used in apache2ctl,
+ # /etc/init.d/apache2, /etc/logrotate.d/apache2, etc.
+-export APACHE_RUN_USER=www-data
++export APACHE_RUN_USER=opensrf
+ export APACHE_RUN_GROUP=www-data
+ export APACHE_PID_FILE=/var/run/apache2.pid
