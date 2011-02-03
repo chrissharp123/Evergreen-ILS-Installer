@@ -2,6 +2,11 @@ This program is based on the "eg_dev_lenny_installer" script written by
 Bill Erickson of ESI, and is intended to provide an as fully automated as
 possible installation of recent versions of Evergreen and OpenSRF.
 
+The pinesify.sh script will access the files in PINES-files and PINES-Patches
+to make the Evergreen server have the look and feel (and some functionality -
+more to come!) of the PINES production instance of Evergreen.  It should be 
+on an Evergreen 1.6.1.X installation.
+
 WARNING: This is for development and evaluation purposes only.  This 
 script makes a lot of assumptions and does stuff you won't like.  
 Use at own risk.
