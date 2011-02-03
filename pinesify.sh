@@ -10,8 +10,8 @@
 # ============================================================================
 
 BASE_DIR=$PWD
-FILES_DIR=/root/PINES-Development/PINES-files
-PATCH_DIR=/root/PINES-Development/PINES-Patches
+FILES_DIR=$BASE_DIR/PINES-files
+PATCH_DIR=$BASE_DIR/PINES-Patches
 
 # copy the PINES files into place
 cd $FILES_DIR
