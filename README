@@ -1,5 +1,6 @@
-
-Mostly automated "trunk" install of OpenSRF and Evergreen on Debian Lenny.
+This program is based on the "eg_dev_lenny_installer" script written by 
+Bill Erickson of ESI, and is intended to provide an as fully automated as
+possible installation of recent versions of Evergreen and OpenSRF.
 
 WARNING: This is for development and evaluation purposes only.  This 
 script makes a lot of assumptions and does stuff you won't like.  
@@ -14,6 +15,9 @@ Steps:
 
 Author: Bill Erickson (erickson@esilibrary.com)
 Copyright: (C) 2009  Equinox Software Inc.
+
+Modifications by Chris Sharp (csharp@georgialibraries.org)
+Copyright: (c) 2011 Georgia Public Library Service
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
