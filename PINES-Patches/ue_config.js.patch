@@ -1,0 +1,11 @@
+--- ue_config.js.orig	2011-01-27 16:08:08.000000000 -0500
++++ /openils/var/web/xul/server/patron/ue_config.js 2011-01-27 16:09:55.000000000 -0500
+@@ -221,7 +221,7 @@
+             }
+         },
+         {
+-            required : false,
++            required : true,
+             object    : patron,
+             key        : 'dob',
+             errkey    : 'ue_bad_dob',

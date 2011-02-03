@@ -1,0 +1,13 @@
+--- eg_vhost.conf	2011-01-31 13:02:10.000000000 -0500
++++ /etc/apache2/eg_vhost.conf	2011-01-31 13:02:42.000000000 -0500
+@@ -6,8 +6,8 @@
+ # ----------------------------------------------------------------------------------
+ # Point / to the opac -- Craftsman is the new default. Swap lines for the old skin.
+ # ----------------------------------------------------------------------------------
+-# RedirectMatch 301 ^/$ /opac/en-US/skin/default/xml/index.xml
+-RedirectMatch 301 ^/$ /opac/en-US/skin/craftsman/xml/index.xml
++RedirectMatch 301 ^/$ /opac/en-US/skin/default/xml/index.xml
++# RedirectMatch 301 ^/$ /opac/en-US/skin/craftsman/xml/index.xml
+ 
+ # ----------------------------------------------------------------------------------
+ # Assign a default locale to the accessible OPAC

@@ -1,0 +1,32 @@
+--- Evergreen-ILS-1.4.0.7/Open-ILS/web/opac/extras/slimpac/start.html	2009-03-12 21:42:15.000000000 -0400
++++ /openils/var/web/opac/extras/slimpac/start.html	2011-01-26 06:41:02.000000000 -0500
+@@ -12,21 +12,19 @@
+ 		<style type="text/css">
+ 			.maintable {
+ 				border-collapse: collapse;
+-				border: 3px solid #A7EA9D;
++				border: 3px solid #96BEAA;
+ 				-moz-border-radius: 6px;
+ 				padding: 6px;
+ 				margin-top: 65px;
+ 			}
+ 			
+ 			.greenrow {
+-				border: 1px solid #D0D0D0;
+-				background: #A7EA9D;
++				background: #96BEAA;
+ 				height: 20px;
+ 			}
+ 
+ 			.bluerow {
+-				border: 1px solid #D0D0D0;
+-				background: #E0F6E0;
++				background: #FFFFFF;
+ 				height: 20px;
+ 			}
+ 
+@@ -191,3 +189,4 @@
+ 	</body>
+ </html>
+ 
++

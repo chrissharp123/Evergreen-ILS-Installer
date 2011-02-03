@@ -1,0 +1,29 @@
+--- /openils/var/web/opac/locale/en-US/opac.dtd	2010-12-02 12:12:52.000000000 -0500
++++ /openils/var/web/opac/locale/en-US/opac.dtd	2011-01-20 12:42:13.000000000 -0500
+@@ -376,13 +376,15 @@
+ <!ENTITY footer.basic "Basic Catalog (HTML only)">
+ <!ENTITY footer.find.library "Find a Library Near Me">
+ <!ENTITY footer.find.url "http://www.georgialibraries.org/lib/directories/pineslibdir.html">
+-<!ENTITY footer.help.url "http://open-ils.org/dokuwiki/doku.php?id=evergreen-user:opac_help">
++<!ENTITY footer.help.url "http://pines.georgialibraries.org/catalog-help">
+ <!ENTITY footer.help "Help">
+ <!ENTITY footer.library.url "http://www.georgialibraries.org/public/pines.html">
+ <!ENTITY footer.library.about "About PINES">
+ <!ENTITY footer.union.url "http://www.galileo.usg.edu/">
+ <!ENTITY footer.union "GALILEO">
+-<!ENTITY footer.copyright "Copyright &#xA9; 2006-2010 Georgia Public Library Service, and others">
++<!ENTITY footer.IE8.url "http://pines.georgialibraries.org/catalog-help#IE8">
++<!ENTITY footer.IE8 "Internet Explorer 8 Issues">
++<!ENTITY footer.copyright "Copyright &#xA9; 2006-2011 Georgia Public Library Service, and others">
+ <!ENTITY footer.logo "Powered by"> <!-- Introduces the logo for the project -->
+ 
+ <!--	================================================================= 
+@@ -421,7 +423,7 @@
+ <!--	================================================================= 
+ 		Page Titles
+ 		================================================================= -->
+-<!ENTITY opac.title.home "Evergreen Home">
++<!ENTITY opac.title.home    "Georgia PINES Catalog">
+ <!ENTITY opac.title.mresult "Evergreen Title Groups">
+ <!ENTITY opac.title.rresult "Evergreen Titles">
+ <!ENTITY opac.title.myopac "Evergreen My Account">
