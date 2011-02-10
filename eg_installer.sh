@@ -74,7 +74,7 @@ sed -i "s^domain^$(hostname -d)^g" "$BASE_DIR/hosts.template" || {
         exit 1;
         }
 mv /etc/hosts /etc/hosts.orig
-mv "$BASE_DIR/hosts.template" /etc/hosts || {
+cp "$BASE_DIR/hosts.template" /etc/hosts || {
         echo "ERROR: Could not move hosts file into place"
         exit 1;
         }
@@ -145,19 +145,11 @@ if [ ! "$(grep datapipe /etc/perl/CPAN/Config.pm)" ]; then
 fi;
 
 # Install pre-reqs
-OSRF_COMMAND='
-if [ ! -e "$WORKING_DIR/$ORSF_TGZ" ]; then
-	wget $OSRF_URL;
-	tar xzf $OSRF_TGZ;
-else
-	echo "OpenSRF tarball already downloaded... skipping."
-fi
-if [ ! -e "$WORKING_DIR/$EG_TGZ" ]; then
-	wget $EG_URL;
-	tar xzf $EG_TGZ;
-else
-	echo "Evergreen tarball already downloaded... skipping."
-fi'
+OSRF_COMMAND="
+wget $OSRF_URL;
+tar xzf $OSRF_TGZ;
+wget $EG_URL;
+tar xzf $EG_TGZ;"
 su - opensrf sh -c "$OSRF_COMMAND"
 cd $OSRF_DIR || {
 	echo "ERROR: Cannot cd to OpenSRF directory.";
