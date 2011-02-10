@@ -28,8 +28,11 @@ read -p "Which version of OpenSRF (e.g. '1.6.2')? " OSRF_VERSION
 read -p "Which version of Evergreen-ILS (eg. '1.6.1.4)? " EG_VERSION
 read -p "What would you like to use for your Jabber password? " JABBER_PASSWORD
 
-#DISTRO="debian-lenny"
-PG_VERSION="8.4"
+if [ "$DISTRO" == "debian-lenny" ]; then
+	PG_VERSION="8.3"
+elif [ "$DISTRO" == "debian-squeeze" ]; then
+	PG_VERSION="8.4"
+fi
 OSRF_TGZ="opensrf-$OSRF_VERSION.tar.gz"
 EG_TGZ="Evergreen-ILS-$EG_VERSION.tar.gz"
 OSRF_URL="http://evergreen-ils.org/downloads/$OSRF_TGZ"
@@ -230,7 +233,7 @@ chown opensrf:opensrf /home/opensrf/.srfsh.xml;
 
 
 # Create the DB
-PG_COMMAND='
+PG_COMMAND="
 createdb -T template0 -E UNICODE evergreen;
 createlang plperl   evergreen;
 createlang plperlu  evergreen;
@@ -238,8 +241,8 @@ createlang plpgsql  evergreen;
 psql -f /usr/share/postgresql/$PG_VERSION/contrib/tablefunc.sql evergreen;
 psql -f /usr/share/postgresql/$PG_VERSION/contrib/tsearch2.sql  evergreen;
 psql -f /usr/share/postgresql/$PG_VERSION/contrib/pgxml.sql     evergreen;
-echo -e "\n\nPlease enter a password for the evergreen database user.  If you do not want to edit configs, use \"evergreen\"\n"
-createuser -P -s evergreen;'
+echo -e '\n\nPlease enter a password for the evergreen database user.  If you do not want to edit configs, use \"evergreen\"\n'
+createuser -P -s evergreen;"
 su - postgres sh -c "$PG_COMMAND"
 
 # Apply the DB schema
