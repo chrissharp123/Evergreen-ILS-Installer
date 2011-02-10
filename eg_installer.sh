@@ -23,12 +23,12 @@
 clear
 echo "This script will install OpenSRF and Evergreen on Debian 'lenny'."
 echo 
-#read -p "Which Linux distribution (currently supported: debian-lenny, ubuntu-lucid)? " DISTRO
+read -p "Which Linux distribution (currently supported: debian-lenny, debian-squeeze)? " DISTRO
 read -p "Which version of OpenSRF (e.g. '1.6.2')? " OSRF_VERSION
 read -p "Which version of Evergreen-ILS (eg. '1.6.1.4)? " EG_VERSION
 read -p "What would you like to use for your Jabber password? " JABBER_PASSWORD
 
-DISTRO="debian-lenny"
+#DISTRO="debian-lenny"
 OSRF_TGZ="opensrf-$OSRF_VERSION.tar.gz"
 EG_TGZ="Evergreen-ILS-$EG_VERSION.tar.gz"
 OSRF_URL="http://evergreen-ils.org/downloads/$OSRF_TGZ"
@@ -94,7 +94,18 @@ fi;
 # Install some essential tools
 apt-get update; 
 apt-get -yq dist-upgrade;
-apt-get -yq install vim build-essential syslog-ng psmisc automake ntpdate subversion; 
+if [ $DISTRO == "debian-lenny" ]; then
+	apt-get -yq install vim build-essential syslog-ng psmisc automake ntpdate subversion; 
+elif [ $DISTRO == "debian-squeeze" ]; then
+	apt-get -yq install vim build-essential psmisc automake ntpdate subversion; 
+fi
+# For Debian Squeeze: Note syslog-ng was removed since it now requires libdbi (squeeze=0.8.2), but if this version of 
+# libdbi is installed, the later version installed for Evergreen (0.8.3) will not work.  
+# You can hack in syslog-ng with something like this, but it will not survive package updates:
+# $ apt-get install syslog-ng;
+# $ apt-get remove libdbi0; # removes both, but leave them in the cache
+# $ dpkg -i --ignore-depends=libdbi0  /var/cache/apt/archives/syslog-ng_3.1.1*.deb
+
 ntpdate pool.ntp.org 
 cp $BASE_DIR/evergreen.ld.conf /etc/ld.so.conf.d/
 ldconfig;
@@ -122,20 +133,34 @@ fi;
 
 # Install pre-reqs
 OSRF_COMMAND="
-wget $OSRF_URL;
-wget $EG_URL;
-tar xzf $OSRF_TGZ;
-tar xzf $EG_TGZ;"
+if [ ! -e $ORSF_TGZ ]; then
+	wget $OSRF_URL;
+	tar xzf $OSRF_TGZ;
+else
+	echo 'OpenSRF tarball already downloaded... skipping.'
+fi
+if [ ! -e $EG_TGZ ]; then
+	wget $EG_URL;
+	tar xzf $EG_TGZ;
+else
+	echo 'Evergreen tarball already downloaded... skipping.'
+fi"
 su - opensrf sh -c "$OSRF_COMMAND"
-cd $OSRF_DIR || echo "Cannot cd to OpenSRF directory.";
+cd $OSRF_DIR || {
+	echo "ERROR: Cannot cd to OpenSRF directory.";
+	exit 1;
+}
 # wget 'http://svn.open-ils.org/trac/OpenSRF/export/HEAD/trunk/src/extras/Makefile.install'      -O Makefile.install.osrf
 # wget 'http://svn.open-ils.org/trac/ILS/export/HEAD/trunk/Open-ILS/src/extras/Makefile.install' -O Makefile.install.ils
 make -f src/extras/Makefile.install $DISTRO
-cd $EG_DIR || echo "Cannot cd to Evergreen-ILS directory." 
+cd $EG_DIR || {
+	echo "ERROR: Cannot cd to Evergreen-ILS directory.";
+	exit 1;
+}
 make -f Open-ILS/src/extras/Makefile.install $DISTRO
 if [ "$DISTRO" == "debian-lenny" ]; then
 make -f Open-ILS/src/extras/Makefile.install install_pgsql_server_debs_83
-elif [ "$DISTRO" == "ubuntu-lucid" ]; then
+elif [ "$DISTRO" == "debian-squeeze" ]; then
 make -f Open-ILS/src/extras/Makefile.install install_pgsql_server_debs_84
 fi
 
@@ -146,8 +171,12 @@ if [ ! "$(grep 'public.localhost' /etc/ejabberd/ejabberd.cfg)" ]; then
     /etc/init.d/ejabberd stop;
     killall beam epmd; # just in case
     cp ejabberd.cfg /root/ejabberd.cfg.orig
-    patch -p0 < $BASE_DIR/ejabberd.lenny.EG.patch
-    chown ejabberd:ejabberd ejabberd.cfg
+	if [ "$DISTRO" == "debian-lenny" ]; then
+    	patch -p0 < $BASE_DIR/ejabberd.lenny.EG.patch
+	elif [ "$DISTRO" == "debian-squeeze" ]; then
+		patch -p0 < $BASE_DIR/ejabberd.squeeze.EG.patch
+	fi;   
+	chown ejabberd:ejabberd ejabberd.cfg
     /etc/init.d/ejabberd start
     sleep 2;
     ejabberdctl register router  private.localhost $JABBER_PASSWORD
@@ -180,13 +209,18 @@ cp /openils/conf/opensrf_core.xml.example /openils/conf/opensrf_core.xml
 cp /openils/conf/srfsh.xml.example	  /home/opensrf/.srfsh.xml
 cd /openils/var/web/xul
 ln -sf $SC_BUILD/server server
-patch -p0 < $BASE_DIR/opensrf_core.xml.patch || echo "Could not patch opensrf_core.xml."; 
-patch -p0 < $BASE_DIR/srfsh.xml.patch || echo "Could not patch srfsh.xml."; 
+patch -p0 < $BASE_DIR/opensrf_core.xml.patch || {
+	echo "Could not patch opensrf_core.xml.";
+	exit 1;
+}
+patch -p0 < $BASE_DIR/srfsh.xml.patch || {
+	 echo "Could not patch srfsh.xml."; 
+	 exit 1;
+}
 
 # give it all to opensrf
 chown -R opensrf:opensrf /openils
 chown opensrf:opensrf /home/opensrf/.srfsh.xml;
-
 
 
 # Create the DB
