@@ -151,22 +151,22 @@ tar xzf $OSRF_TGZ;
 wget $EG_URL;
 tar xzf $EG_TGZ;"
 su - opensrf sh -c "$OSRF_COMMAND"
-cd $OSRF_DIR || {
-	echo "ERROR: Cannot cd to OpenSRF directory.";
-	exit 1;
-}
-# wget 'http://svn.open-ils.org/trac/OpenSRF/export/HEAD/trunk/src/extras/Makefile.install'      -O Makefile.install.osrf
-# wget 'http://svn.open-ils.org/trac/ILS/export/HEAD/trunk/Open-ILS/src/extras/Makefile.install' -O Makefile.install.ils
-make -f src/extras/Makefile.install $DISTRO
-cd $EG_DIR || {
-	echo "ERROR: Cannot cd to Evergreen-ILS directory.";
-	exit 1;
-}
-make -f Open-ILS/src/extras/Makefile.install $DISTRO
-if [ "$DISTRO" == "debian-lenny" ]; then
-make -f Open-ILS/src/extras/Makefile.install install_pgsql_server_debs_83
-elif [ "$DISTRO" == "debian-squeeze" ]; then
-make -f Open-ILS/src/extras/Makefile.install install_pgsql_server_debs_84
+	cd $OSRF_DIR || {
+		echo "ERROR: Cannot cd to OpenSRF directory.";
+		exit 1;
+	}
+	make -f src/extras/Makefile.install $DISTRO
+if [ $DISTRO == "debian-lenny" ]; then
+	cd $EG_DIR || {
+		echo "ERROR: Cannot cd to Evergreen-ILS directory.";
+		exit 1;
+	}
+	make -f Open-ILS/src/extras/Makefile.install $DISTRO
+	make -f Open-ILS/src/extras/Makefile.install install_pgsql_server_debs_83
+elif [ $DISTRO == "debian-squeeze" ]; then
+	wget 'http://svn.open-ils.org/trac/ILS/export/19421/tags/rel_2_0_1/Open-ILS/src/extras/Makefile.install' -O Makefile.install.ils
+	make -f Makefile.install.ils $DISTRO
+	make -f Open-ILS/src/extras/Makefile.install install_pgsql_server_debs_84
 fi
 
 
