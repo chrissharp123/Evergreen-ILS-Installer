@@ -42,29 +42,42 @@ OSRF_DIR="$WORKING_DIR/opensrf-$OSRF_VERSION"
 SC_BUILD="rel_$(echo $EG_VERSION | tr "." "_")"
 
 # copy the Jabber password into opensrf_core.xml.patch and srfsh.xml.patch
-if [ ! -e "$BASE_DIR/opensrf_core.xml.patch" ]
-	then	
-cp "$BASE_DIR/opensrf_core.xml.patch.example" "$BASE_DIR/opensrf_core.xml.patch" && sed -i "s^OpenSRF_Password^$JABBER_PASSWORD^g" "$BASE_DIR/opensrf_core.xml.patch" || echo "Could not create opensrf_core.xml.patch."
-	else
-echo "opensrf_core.xml.patch has already been created - please review that its settings are correct"
-sleep 2
-vi "$BASE_DIR/opensrf_core.xml.patch"
+if [ ! -e "$BASE_DIR/opensrf_core.xml.patch" ]; then	
+	cp "$BASE_DIR/opensrf_core.xml.patch.example" "$BASE_DIR/opensrf_core.xml.patch" && sed -i "s^OpenSRF_Password^$JABBER_PASSWORD^g" "$BASE_DIR/opensrf_core.xml.patch" || {
+	echo "ERROR: Could not create opensrf_core.xml.patch.";
+	exit 1;
+	}
+else
+	echo "opensrf_core.xml.patch has already been created - please review that its settings are correct"
+	sleep 2
+	vi "$BASE_DIR/opensrf_core.xml.patch"
 fi
 
-if [ ! -e "$BASE_DIR/srfsh.xml.patch" ]
-        then
-cp "$BASE_DIR/srfsh.xml.patch.example" "$BASE_DIR/srfsh.xml.patch" && sed -i "s^OpenSRF_Password^$JABBER_PASSWORD^g" "$BASE_DIR/srfsh.xml.patch" || echo "Could not create srfsh.xml.patch."
-        else
-echo "srfsh.xml.patch.example has already been created - please review that its settings are correct"
-sleep 2
-vi "$BASE_DIR/srfsh.xml.patch"
+if [ ! -e "$BASE_DIR/srfsh.xml.patch" ]; then
+	cp "$BASE_DIR/srfsh.xml.patch.example" "$BASE_DIR/srfsh.xml.patch" && sed -i "s^OpenSRF_Password^$JABBER_PASSWORD^g" "$BASE_DIR/srfsh.xml.patch" || {
+	echo "ERROR: Could not create srfsh.xml.patch.";
+	exit 1;
+	}
+else
+	echo "srfsh.xml.patch.example has already been created - please review that its settings are correct"
+	sleep 2
+	vi "$BASE_DIR/srfsh.xml.patch"
 fi
 
 # customize the hosts file and move it into place
-sed -i "s^hostname^$(hostname -s)^g" "$BASE_DIR/hosts.template"
-sed -i "s^domain^$(hostname -d)^g" "$BASE_DIR/hosts.template"
+sed -i "s^hostname^$(hostname -s)^g" "$BASE_DIR/hosts.template" || {
+	echo "ERROR: Could not substitute hostname in hosts.template"
+	exit 1;
+	}
+sed -i "s^domain^$(hostname -d)^g" "$BASE_DIR/hosts.template" || {
+        echo "ERROR: Could not substitute domain name in hosts.template"
+        exit 1;
+        }
 mv /etc/hosts /etc/hosts.orig
-mv "$BASE_DIR/hosts.template" /etc/hosts
+mv "$BASE_DIR/hosts.template" /etc/hosts || {
+        echo "ERROR: Could not move hosts file into place"
+        exit 1;
+        }
 
 # And they're off...
 
@@ -132,19 +145,19 @@ if [ ! "$(grep datapipe /etc/perl/CPAN/Config.pm)" ]; then
 fi;
 
 # Install pre-reqs
-OSRF_COMMAND="
-if [ ! -e $ORSF_TGZ ]; then
+OSRF_COMMAND='
+if [ ! -e "$WORKING_DIR/$ORSF_TGZ" ]; then
 	wget $OSRF_URL;
 	tar xzf $OSRF_TGZ;
 else
-	echo 'OpenSRF tarball already downloaded... skipping.'
+	echo "OpenSRF tarball already downloaded... skipping."
 fi
-if [ ! -e $EG_TGZ ]; then
+if [ ! -e "$WORKING_DIR/$EG_TGZ" ]; then
 	wget $EG_URL;
 	tar xzf $EG_TGZ;
 else
-	echo 'Evergreen tarball already downloaded... skipping.'
-fi"
+	echo "Evergreen tarball already downloaded... skipping."
+fi'
 su - opensrf sh -c "$OSRF_COMMAND"
 cd $OSRF_DIR || {
 	echo "ERROR: Cannot cd to OpenSRF directory.";

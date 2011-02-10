@@ -1,0 +1,62 @@
+--- ejabberd.cfg	2010-08-13 16:03:40.000000000 -0400
++++ /tmp/ejabberd.cfg.orig	2010-08-13 16:07:13.000000000 -0400
+@@ -58,7 +58,7 @@
+ {acl, admin, {user, "", "localhost"}}.
+ 
+ %% Hostname
+-{hosts, ["localhost"]}.
++{hosts, ["public.localhost", "private.localhost"]}.
+ 
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ 
+@@ -115,7 +115,7 @@
+   {5222, ejabberd_c2s, [
+ 			{access, c2s},
+ 			{shaper, c2s_shaper},
+-			{max_stanza_size, 65536},
++			{max_stanza_size, 200000},
+                         %%zlib,
+ 			starttls, {certfile, "/etc/ejabberd/ejabberd.pem"}
+ 		       ]},
+@@ -133,7 +133,7 @@
+ 
+   {5269, ejabberd_s2s_in, [
+ 			   {shaper, s2s_shaper},
+-			   {max_stanza_size, 131072}
++			   {max_stanza_size, 200000}
+ 			  ]},
+ 
+   %% External MUC jabber-muc
+@@ -406,12 +406,12 @@
+ %%
+ %% The "normal" shaper limits traffic speed to 1.000 B/s
+ %%
+-{shaper, normal, {maxrate, 1000}}.
++{shaper, normal, {maxrate, 500000}}.
+ 
+ %%
+ %% The "fast" shaper limits traffic speed to 50.000 B/s
+ %%
+-{shaper, fast, {maxrate, 50000}}.
++{shaper, normal, {maxrate, 500000}}.
+ 
+ 
+ %%%   ====================
+@@ -457,7 +457,7 @@
+ %%%   ACCESS RULES
+ 
+ %% Define the maximum number of time a single user is allowed to connect:
+-{access, max_user_sessions, [{10, all}]}.
++{access, max_user_sessions, [{5000, all}]}.
+ 
+ %% Maximum number of offline messages that users can have:
+ {access, max_user_offline_messages, [{5000, admin}, {100, all}]}. 
+@@ -581,7 +581,7 @@
+ 		  {max_users, 500}
+ 		 ]},
+   %%{mod_muc_log,[]},
+-  {mod_offline,  [{access_max_user_messages, max_user_offline_messages}]},
++  %%{mod_offline,  [{access_max_user_messages, max_user_offline_messages}]},
+   {mod_privacy,  []},
+   {mod_private,  []},
+   {mod_proxy65,  [
