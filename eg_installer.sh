@@ -21,7 +21,7 @@
 # If you change the jabber password, you will need to 
 # edit opensrf_core.xml and srfsh.xml accordingly
 clear
-echo "This script will install OpenSRF and Evergreen on Debian 'lenny'."
+echo "This script will install OpenSRF and Evergreen on Debian 'lenny' or 'squeeze'."
 echo 
 read -p "Which Linux distribution (currently supported: debian-lenny, debian-squeeze)? " DISTRO
 read -p "Which version of OpenSRF (e.g. '1.6.2')? " OSRF_VERSION
@@ -46,49 +46,55 @@ OSRF_DIR="$WORKING_DIR/opensrf-$OSRF_VERSION"
 SC_BUILD="rel_$(echo $EG_VERSION | tr "." "_")"
 
 # copy the Jabber password into opensrf_core.xml.patch and srfsh.xml.patch
-if [ ! -e "$BASE_DIR/opensrf_core.xml.patch" ]; then	
-	cp "$BASE_DIR/opensrf_core.xml.patch.example" "$BASE_DIR/opensrf_core.xml.patch" && sed -i "s^OpenSRF_Password^$JABBER_PASSWORD^g" "$BASE_DIR/opensrf_core.xml.patch" || {
-	echo "ERROR: Could not create opensrf_core.xml.patch.";
-	exit 1;
-	}
-else
-	echo "opensrf_core.xml.patch has already been created - please review that its settings are correct"
-	sleep 2
-	vi "$BASE_DIR/opensrf_core.xml.patch"
-fi
+PatchOpenSRF () {
+	if [ ! -e "$BASE_DIR/opensrf_core.xml.patch" ]; then	
+		cp "$BASE_DIR/opensrf_core.xml.patch.example" "$BASE_DIR/opensrf_core.xml.patch" && sed -i "s^OpenSRF_Password^$JABBER_PASSWORD^g" "$BASE_DIR/opensrf_core.xml.patch" || {
+		echo "ERROR: Could not create opensrf_core.xml.patch.";
+		exit 1;
+		}
+	else
+		echo "opensrf_core.xml.patch has already been created - please review that its settings are correct"
+		sleep 2
+		vi "$BASE_DIR/opensrf_core.xml.patch"
+	fi
+}
 
-if [ ! -e "$BASE_DIR/srfsh.xml.patch" ]; then
-	cp "$BASE_DIR/srfsh.xml.patch.example" "$BASE_DIR/srfsh.xml.patch" && sed -i "s^OpenSRF_Password^$JABBER_PASSWORD^g" "$BASE_DIR/srfsh.xml.patch" || {
-	echo "ERROR: Could not create srfsh.xml.patch.";
-	exit 1;
-	}
-else
-	echo "srfsh.xml.patch.example has already been created - please review that its settings are correct"
-	sleep 2
-	vi "$BASE_DIR/srfsh.xml.patch"
-fi
+PatchSrfsh () {
+	if [ ! -e "$BASE_DIR/srfsh.xml.patch" ]; then
+		cp "$BASE_DIR/srfsh.xml.patch.example" "$BASE_DIR/srfsh.xml.patch" && sed -i "s^OpenSRF_Password^$JABBER_PASSWORD^g" "$BASE_DIR/srfsh.xml.patch" || {
+		echo "ERROR: Could not create srfsh.xml.patch.";
+		exit 1;
+		}
+	else
+		echo "srfsh.xml.patch.example has already been created - please review that its settings are correct"
+		sleep 2
+		vi "$BASE_DIR/srfsh.xml.patch"
+	fi
+}
 
 # customize the hosts file and move it into place
-sed -i "s^hostname^$(hostname -s)^g" "$BASE_DIR/hosts.template" || {
-	echo "ERROR: Could not substitute hostname in hosts.template"
-	exit 1;
+PatchHosts () {
+	sed -i "s^hostname^$(hostname -s)^g" "$BASE_DIR/hosts.template" || {
+		echo "ERROR: Could not substitute hostname in hosts.template"
+		exit 1;
 	}
-sed -i "s^domain^$(hostname -d)^g" "$BASE_DIR/hosts.template" || {
-        echo "ERROR: Could not substitute domain name in hosts.template"
-        exit 1;
+	sed -i "s^domain^$(hostname -d)^g" "$BASE_DIR/hosts.template" || {
+        	echo "ERROR: Could not substitute domain name in hosts.template"
+        	exit 1;
         }
-mv /etc/hosts /etc/hosts.orig
-cp "$BASE_DIR/hosts.template" /etc/hosts || {
-        echo "ERROR: Could not move hosts file into place"
-        exit 1;
+	mv /etc/hosts /etc/hosts.orig
+	cp "$BASE_DIR/hosts.template" /etc/hosts || {
+        	echo "ERROR: Could not move hosts file into place"
+        	exit 1;
         }
+}
 
-# And they're off...
 
 
 # Make sure the system is configured to use UTF-8.  Otherwise, Postgres setup will fail
-if [[ ! $LANG =~ "UTF-8" ]]; then
-    cat <<EOF
+CheckLang () {
+	if [[ ! $LANG =~ "UTF-8" ]]; then
+    	cat <<EOF
     Your system locale is not configured to use UTF-8.  This will cause problems with the PostgreSQL installation.  
     
     Do these steps (replace en_US with your locale):
@@ -106,16 +112,9 @@ if [[ ! $LANG =~ "UTF-8" ]]; then
 EOF
     exit;
 fi;
-
+}
 
 # Install some essential tools
-apt-get update; 
-apt-get -yq dist-upgrade;
-if [ $DISTRO == "debian-lenny" ]; then
-	apt-get -yq install vim build-essential syslog-ng psmisc automake ntpdate subversion; 
-elif [ $DISTRO == "debian-squeeze" ]; then
-	apt-get -yq install vim build-essential psmisc automake ntpdate subversion; 
-fi
 # For Debian Squeeze: Note syslog-ng was removed since it now requires libdbi (squeeze=0.8.2), but if this version of 
 # libdbi is installed, the later version installed for Evergreen (0.8.3) will not work.  
 # You can hack in syslog-ng with something like this, but it will not survive package updates:
@@ -123,14 +122,31 @@ fi
 # $ apt-get remove libdbi0; # removes both, but leave them in the cache
 # $ dpkg -i --ignore-depends=libdbi0  /var/cache/apt/archives/syslog-ng_3.1.1*.deb
 
-ntpdate pool.ntp.org 
-cp $BASE_DIR/evergreen.ld.conf /etc/ld.so.conf.d/
-ldconfig;
+InstallTools () {
+	apt-get update; 
+	apt-get -yq dist-upgrade;
+	if [ $DISTRO == "debian-lenny" ]; then
+		apt-get -yq install vim build-essential syslog-ng psmisc automake ntpdate subversion; 
+	elif [ $DISTRO == "debian-squeeze" ]; then
+		apt-get -yq install vim build-essential psmisc automake ntpdate subversion; 
+	fi
+	ntpdate pool.ntp.org 
+	cp $BASE_DIR/evergreen.ld.conf /etc/ld.so.conf.d/
+	ldconfig;
+# XXX: For some reason, when PG is installed with Makefile.install, the initial DB cluster templates 
+# are created with Encoding SQL_ASCII, even though all locale settings (locale, $LANG, etc.) indicate UTF-8.
+# This could be a Squeeze oddity or something going on in this script.
+# Forcing the PG install manually up front avoids the problem.  Go figure.
+	apt-get -yq install "postgresql-$PG_VERSION"
+	echo "Created PG cluster with databases:"
+	su - postgres sh -c "psql -l"
+}
 
 # Create opensrf user and set up environment
-if [ ! "$(grep ^opensrf: /etc/passwd)" ]; then
-    useradd -m -s /bin/bash opensrf
-    echo '
+CreateOpenSRF () {
+	if [ ! "$(grep ^opensrf: /etc/passwd)" ]; then
+   	useradd -m -s /bin/bash opensrf
+    	echo '
     export PERL5LIB=/openils/lib/perl5:$PERL5LIB
     export PATH=/openils/bin:$PATH
     export LD_LIBRARY_PATH=/openils/lib:/usr/local/lib:/usr/local/lib/dbd:$LD_LIBRARY_PATH
@@ -138,28 +154,40 @@ if [ ! "$(grep ^opensrf: /etc/passwd)" ]; then
     export EDITOR="vim";
     alias ls="ls --color=auto"
     ' >> /home/opensrf/.bashrc
-fi;
-
+	fi;
+}
 
 # Force cpan config 
-if [ ! "$(grep datapipe /etc/perl/CPAN/Config.pm)" ]; then
-    cpan foo
-    cd /etc/perl/CPAN/;
-    patch -p0 < $BASE_DIR/CPAN_Config.pm.EG.patch
-fi;
+ConfigCPAN () {
+	if [ ! "$(grep datapipe /etc/perl/CPAN/Config.pm)" ]; then
+    	cpan foo
+    	cd /etc/perl/CPAN/;
+    	patch -p0 < $BASE_DIR/CPAN_Config.pm.EG.patch
+	fi;
+}
 
 # Install pre-reqs
-OSRF_COMMAND="
-wget $OSRF_URL;
-tar xzf $OSRF_TGZ;
-wget $EG_URL;
-tar xzf $EG_TGZ;"
-su - opensrf sh -c "$OSRF_COMMAND"
-	cd $OSRF_DIR || {
-		echo "ERROR: Cannot cd to OpenSRF directory.";
-		exit 1;
+WgetTar () {
+if [ ! -f "$WORKING_DIR/$OSRF_TGZ" ]; then
+	OSRF_COMMAND="
+	wget $OSRF_URL;
+	tar xzf $OSRF_TGZ;"
+	su - opensrf sh -c "$OSRF_COMMAND"
+fi
+if [ ! -f "$WORKING_DIR/$EG_TGZ" ]; then
+	OSRF_COMMAND="
+	wget $EG_URL;
+	tar xzf $EG_TGZ;"
+	su - opensrf sh -c "$OSRF_COMMAND"
+fi
+}
+
+InstallPreReqs () {	
+cd $OSRF_DIR || {
+	echo "ERROR: Cannot cd to OpenSRF directory.";
+	exit 1;
 	}
-	make -f src/extras/Makefile.install $DISTRO
+make -f src/extras/Makefile.install $DISTRO
 if [ $DISTRO == "debian-lenny" ]; then
 	cd $EG_DIR || {
 		echo "ERROR: Cannot cd to Evergreen-ILS directory.";
@@ -172,14 +200,15 @@ elif [ $DISTRO == "debian-squeeze" ]; then
 	make -f Makefile.install.ils $DISTRO
 	make -f Open-ILS/src/extras/Makefile.install install_pgsql_server_debs_84
 fi
-
-
+}
 # Patch Ejabberd and register users
-if [ ! "$(grep 'public.localhost' /etc/ejabberd/ejabberd.cfg)" ]; then
-    cd /etc/ejabberd/
-    /etc/init.d/ejabberd stop;
-    killall beam epmd; # just in case
-    cp ejabberd.cfg /root/ejabberd.cfg.orig
+ConfigEJabberd () {
+	if [ ! "$(grep 'public.localhost' /etc/ejabberd/ejabberd.cfg)" ]; then
+    		cd /etc/ejabberd/
+    		/etc/init.d/ejabberd stop;
+    		killall beam epmd; # just in case
+    		cp ejabberd.cfg /root/ejabberd.cfg.orig
+	fi
 	if [ "$DISTRO" == "debian-lenny" ]; then
     	patch -p0 < $BASE_DIR/ejabberd.lenny.EG.patch
 	elif [ "$DISTRO" == "debian-squeeze" ]; then
@@ -192,66 +221,75 @@ if [ ! "$(grep 'public.localhost' /etc/ejabberd/ejabberd.cfg)" ]; then
     ejabberdctl register opensrf private.localhost $JABBER_PASSWORD
     ejabberdctl register router  public.localhost  $JABBER_PASSWORD
     ejabberdctl register opensrf public.localhost  $JABBER_PASSWORD
-fi;
-
-
-OSRF_COMMAND="
-cd $OSRF_DIR;
-./configure --prefix=/openils --sysconfdir=/openils/conf;
-make;"
-su - opensrf sh -c "$OSRF_COMMAND"
-cd "$OSRF_DIR"
-make install
-
-# Build and install the ILS
-OSRF_COMMAND="
-cd $EG_DIR;
-./configure --prefix=/openils --sysconfdir=/openils/conf;
-make;"
-
-su - opensrf sh -c "$OSRF_COMMAND"
-cd "$EG_DIR";
-make STAFF_CLIENT_BUILD_ID=$SC_BUILD install
-cp /openils/conf/oils_web.xml.example     /openils/conf/oils_web.xml
-cp /openils/conf/opensrf.xml.example      /openils/conf/opensrf.xml
-cp /openils/conf/opensrf_core.xml.example /openils/conf/opensrf_core.xml
-cp /openils/conf/srfsh.xml.example	  /home/opensrf/.srfsh.xml
-cd /openils/var/web/xul
-ln -sf $SC_BUILD/server server
-patch -p0 < $BASE_DIR/opensrf_core.xml.patch || {
-	echo "Could not patch opensrf_core.xml.";
-	exit 1;
-}
-patch -p0 < $BASE_DIR/srfsh.xml.patch || {
-	 echo "Could not patch srfsh.xml."; 
-	 exit 1;
 }
 
+
+InstallOpenSRF () {
+	OSRF_COMMAND="
+	cd $OSRF_DIR;
+	./configure --prefix=/openils --sysconfdir=/openils/conf;
+	make;"
+	su - opensrf sh -c "$OSRF_COMMAND"
+	cd "$OSRF_DIR"
+	make install
+}
+
+InstallEG () {
+	OSRF_COMMAND="
+	cd $EG_DIR;
+	./configure --prefix=/openils --sysconfdir=/openils/conf;
+	make;"
+	su - opensrf sh -c "$OSRF_COMMAND"
+	cd "$EG_DIR";
+	make STAFF_CLIENT_BUILD_ID=$SC_BUILD install
+	cp /openils/conf/oils_web.xml.example     /openils/conf/oils_web.xml
+	cp /openils/conf/opensrf.xml.example      /openils/conf/opensrf.xml
+	cp /openils/conf/opensrf_core.xml.example /openils/conf/opensrf_core.xml
+	cp /openils/conf/srfsh.xml.example	  /home/opensrf/.srfsh.xml
+	cd /openils/var/web/xul
+	ln -sf $SC_BUILD/server server
+	patch -p0 < $BASE_DIR/opensrf_core.xml.patch || {
+		echo "Could not patch opensrf_core.xml.";
+		exit 1;
+	}
+	patch -p0 < $BASE_DIR/srfsh.xml.patch || {
+		echo "Could not patch srfsh.xml."; 
+		exit 1;
+	}
+}
 # give it all to opensrf
-chown -R opensrf:opensrf /openils
-chown opensrf:opensrf /home/opensrf/.srfsh.xml;
+ChownOpenSRF () {
+	chown -R opensrf:opensrf /openils
+	chown opensrf:opensrf /home/opensrf/.srfsh.xml;
+}
 
 
 # Create the DB
-PG_COMMAND="
-createdb -T template0 -E UNICODE evergreen;
-createlang plperl   evergreen;
-createlang plperlu  evergreen;
-createlang plpgsql  evergreen;
-psql -f /usr/share/postgresql/$PG_VERSION/contrib/tablefunc.sql evergreen;
-psql -f /usr/share/postgresql/$PG_VERSION/contrib/tsearch2.sql  evergreen;
-psql -f /usr/share/postgresql/$PG_VERSION/contrib/pgxml.sql     evergreen;
-echo -e '\n\nPlease enter a password for the evergreen database user.  If you do not want to edit configs, use \"evergreen\"\n'
-createuser -P -s evergreen;"
-su - postgres sh -c "$PG_COMMAND"
+CreateDB () {
+	PG_COMMAND="
+	createdb -T template0 -E UNICODE evergreen;
+	createlang plperl   evergreen;
+	createlang plperlu  evergreen;
+	createlang plpgsql  evergreen;
+	psql -f /usr/share/postgresql/$PG_VERSION/contrib/tablefunc.sql evergreen;
+	psql -f /usr/share/postgresql/$PG_VERSION/contrib/tsearch2.sql  evergreen;
+	psql -f /usr/share/postgresql/$PG_VERSION/contrib/pgxml.sql     evergreen;
+	echo -e '\n\nPlease enter a password for the evergreen database user.  If you do not want to edit configs, use \"evergreen\"\n'
+	createuser -P -s evergreen;"
+	su - postgres sh -c "$PG_COMMAND"
+}
+
 
 # Apply the DB schema
-cd $EG_DIR;
-perl Open-ILS/src/support-scripts/eg_db_config.pl --update-config \
-    --service all --create-schema --create-bootstrap --create-offline \
-    --user evergreen --password evergreen --hostname localhost --database evergreen
+DBSchema () {
+	cd $EG_DIR;
+	perl Open-ILS/src/support-scripts/eg_db_config.pl --update-config \
+    		--service all --create-schema --create-bootstrap --create-offline \
+   		 --user evergreen --password evergreen --hostname localhost --database evergreen
+}
 
 # Copy apache configs into place and create SSL cert
+ConfigApache () {
 cp Open-ILS/examples/apache/eg.conf       /etc/apache2/sites-available/
 cp Open-ILS/examples/apache/eg_vhost.conf /etc/apache2/
 cp Open-ILS/examples/apache/startup.pl    /etc/apache2/
@@ -279,6 +317,24 @@ a2ensite eg.conf
 
 echo "Restarting apache with new config...."
 /etc/init.d/apache2 restart
+}
+
+PatchOpenSRF
+PatchSrfsh
+PatchHosts
+CheckLang
+InstallTools
+CreateOpenSRF
+ConfigCPAN
+WgetTar
+InstallPreReqs
+ConfigEJabberd
+InstallOpenSRF
+InstallEG
+ChownOpenSRF
+CreateDB
+DBSchema
+ConfigApache
 
 if [ ! "$(grep 'public.localhost' /etc/hosts)" ]; then
     cat <<EOF
