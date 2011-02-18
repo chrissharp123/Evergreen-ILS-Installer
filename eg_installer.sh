@@ -23,10 +23,13 @@
 clear
 echo "This script will install OpenSRF and Evergreen on Debian 'lenny' or 'squeeze'."
 echo 
+# we manually ask for these parameters without any checking, so a typo = failure of script
+# TODO: work in some regexes to check for proper format (at least) - or a numbered list to select from
 read -p "Which Linux distribution (currently supported: debian-lenny, debian-squeeze)? " DISTRO
 read -p "Which version of OpenSRF (e.g. '1.6.2')? " OSRF_VERSION
 read -p "Which version of Evergreen-ILS (eg. '1.6.1.4)? " EG_VERSION
 read -p "What would you like to use for your Jabber password? " JABBER_PASSWORD
+
 
 if [ "$DISTRO" == "debian-lenny" ]; then
 	PG_VERSION="8.3"
