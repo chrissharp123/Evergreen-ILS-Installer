@@ -198,6 +198,10 @@ if [ $DISTRO == "debian-lenny" ]; then
 elif [ $DISTRO == "debian-squeeze" ]; then
 	wget 'http://svn.open-ils.org/trac/ILS/export/19421/tags/rel_2_0_1/Open-ILS/src/extras/Makefile.install' -O Makefile.install.ils
 	make -f Makefile.install.ils $DISTRO
+	cd $EG_DIR || {
+                echo "ERROR: Cannot cd to Evergreen-ILS directory.";
+                exit 1;
+        }
 	make -f Open-ILS/src/extras/Makefile.install install_pgsql_server_debs_84
 fi
 }
