@@ -2,7 +2,7 @@
 # -----------------------------------------------------------------------
 # Copyright (C) 2009  Equinox Software Inc.
 # Bill Erickson <erickson@esilibrary.com>
-# Modifications (c) 2011 Georgia Public Library Service 
+# Modifications Copyright (c) 2011 Georgia Public Library Service 
 # Chris Sharp <csharp@georgialibraries.org>
 #
 # This program is free software; you can redistribute it and/or
@@ -28,10 +28,11 @@ echo
 # we manually ask for these parameters without any checking, so a typo = failure of script
 # TODO: work in some regexes to check for proper format (at least) - or a numbered list to select from
 read -p "Which Linux distribution (currently supported: debian-lenny, debian-squeeze)? " DISTRO
-read -p "Which version of OpenSRF (e.g. '1.6.2')? " OSRF_VERSION
-read -p "Which version of Evergreen-ILS (eg. '1.6.1.4)? " EG_VERSION
+read -p "Which version of OpenSRF (e.g. '1.6.2' or '2.0.0')? " OSRF_VERSION
+read -p "Which version of Evergreen-ILS (eg. '1.6.1.4' or '2.0.7')? " EG_VERSION
 read -p "What would you like to use for your Jabber password? " JABBER_PASSWORD
-
+read -p "What would you like to use for your admin user's name? " ADMIN_USER
+read -p "What would you like your admin user's password to be? " ADMIN_PASS
 
 if [ "$DISTRO" == "debian-lenny" ]; then
 	PG_VERSION="8.3"
@@ -294,7 +295,8 @@ DBSchema () {
 	cd $EG_DIR;
 	perl Open-ILS/src/support-scripts/eg_db_config.pl --update-config \
     		--service all --create-schema --create-bootstrap --create-offline \
-   		 --user evergreen --password evergreen --hostname localhost --database evergreen
+   		 --user evergreen --password evergreen --hostname localhost --database evergreen \
+		 --admin-user $ADMIN_USER --admin-pass $ADMIN_PASS
 }
 
 # Copy apache configs into place and create SSL cert
