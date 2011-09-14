@@ -176,6 +176,7 @@ ConfigCPAN () {
 SimpleServer () {
 	cd
 	if [ ! "$(cpan Net::Z3950::SimpleServer)" ]; then
+	apt-get install libyaz-dev
 	wget http://search.cpan.org/CPAN/authors/id/M/MI/MIRK/Net-Z3950-SimpleServer-1.12.tar.gz
 	tar xzf Net-Z3950-SimpleServer-1.12.tar.gz
 	cd Net-Z3950-SimpleServer-1.12/
