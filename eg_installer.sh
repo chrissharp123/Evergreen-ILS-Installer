@@ -172,6 +172,17 @@ ConfigCPAN () {
 	fi;
 }
 
+# Check to see if Net::Z3950::SimpleServer is still broken; if so install older version before proceeding
+SimpleServer () {
+	cd
+	if [ ! "$(cpan Net::Z3950::SimpleServer)" ]; then
+	wget http://search.cpan.org/CPAN/authors/id/M/MI/MIRK/Net-Z3950-SimpleServer-1.12.tar.gz
+	tar xzf Net-Z3950-SimpleServer-1.12.tar.gz
+	cd Net-Z3950-SimpleServer-1.12/
+	perl Makefile.PL
+	make &&	make install
+} 
+
 # Install pre-reqs
 WgetTar () {
 if [ ! -f "$WORKING_DIR/$OSRF_TGZ" ]; then
@@ -337,6 +348,7 @@ CheckLang
 InstallTools
 CreateOpenSRF
 ConfigCPAN
+SimpleServer
 WgetTar
 InstallPreReqs
 ConfigEJabberd
