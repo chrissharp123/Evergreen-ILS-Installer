@@ -182,6 +182,7 @@ SimpleServer () {
 	cd Net-Z3950-SimpleServer-1.12/
 	perl Makefile.PL
 	make &&	make install
+	fi
 } 
 
 # Install pre-reqs
