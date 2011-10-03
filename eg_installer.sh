@@ -25,7 +25,7 @@
 clear
 echo "This script will install OpenSRF and Evergreen on Debian 'lenny' or 'squeeze'."
 echo 
-# we manually ask for these parameters without any checking, so a typo = failure of script
+# we manually ask for these parameters without any checking, so a typo may = failure of script
 # TODO: work in some regexes to check for proper format (at least) - or a numbered list to select from
 read -p "Which Linux distribution (currently supported: debian-lenny, debian-squeeze)? " DISTRO
 read -p "Which version of OpenSRF (e.g. '1.6.2' or '2.0.0')? " OSRF_VERSION
@@ -34,11 +34,7 @@ read -p "What would you like to use for your Jabber password? " JABBER_PASSWORD
 read -p "What would you like to use for your admin user's name? " ADMIN_USER
 read -p "What would you like your admin user's password to be? " ADMIN_PASS
 
-if [ "$DISTRO" == "debian-lenny" ]; then
-	PG_VERSION="8.3"
-elif [ "$DISTRO" == "debian-squeeze" ]; then
-	PG_VERSION="8.4"
-fi
+PG_VERSION="9.0" # as of 2011-10-03
 OSRF_TGZ="opensrf-$OSRF_VERSION.tar.gz"
 EG_TGZ="Evergreen-ILS-$EG_VERSION.tar.gz"
 OSRF_URL="http://evergreen-ils.org/downloads/$OSRF_TGZ"
@@ -61,7 +57,7 @@ PatchOpenSRF () {
 	else
 		echo "opensrf_core.xml.patch has already been created - please review that its settings are correct"
 		sleep 2
-		vi "$BASE_DIR/opensrf_core.xml.patch"
+		editor "$BASE_DIR/opensrf_core.xml.patch"
 	fi
 }
 
@@ -74,7 +70,7 @@ PatchSrfsh () {
 	else
 		echo "srfsh.xml.patch.example has already been created - please review that its settings are correct"
 		sleep 2
-		vi "$BASE_DIR/srfsh.xml.patch"
+		editor "$BASE_DIR/srfsh.xml.patch"
 	fi
 }
 
