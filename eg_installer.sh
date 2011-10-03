@@ -23,22 +23,24 @@
 # If you change the jabber password, you will need to 
 # edit opensrf_core.xml and srfsh.xml accordingly
 clear
-echo "This script will install OpenSRF and Evergreen on Debian 'lenny' or 'squeeze'."
+echo "This script will install OpenSRF and Evergreen on Debian 'squeeze'."
 echo 
 # we manually ask for these parameters without any checking, so a typo may = failure of script
 # TODO: work in some regexes to check for proper format (at least) - or a numbered list to select from
-read -p "Which Linux distribution (currently supported: debian-lenny, debian-squeeze)? " DISTRO
-read -p "Which version of OpenSRF (e.g. '1.6.2' or '2.0.0')? " OSRF_VERSION
-read -p "Which version of Evergreen-ILS (eg. '1.6.1.4' or '2.0.7')? " EG_VERSION
+#read -p "Which Linux distribution (currently supported: debian-lenny, debian-squeeze)? " DISTRO
+read -p "Which version of OpenSRF (e.g. '2.0.1')? " OSRF_VERSION
+read -p "Which version of Evergreen-ILS (eg. '2.0.9', '2.1')? " EG_VERSION
 read -p "What would you like to use for your Jabber password? " JABBER_PASSWORD
 read -p "What would you like to use for your admin user's name? " ADMIN_USER
 read -p "What would you like your admin user's password to be? " ADMIN_PASS
 
+DISTRO='debian-squeeze'
 PG_VERSION="9.0" # as of 2011-10-03
 OSRF_TGZ="opensrf-$OSRF_VERSION.tar.gz"
 EG_TGZ="Evergreen-ILS-$EG_VERSION.tar.gz"
 OSRF_URL="http://evergreen-ils.org/downloads/$OSRF_TGZ"
-EG_URL="http://evergreen-ils.org/downloads/$EG_TGZ"
+# we'll change this to work with git instead
+#EG_URL="http://evergreen-ils.org/downloads/$EG_TGZ"
 
 # Define some directories
 BASE_DIR=$PWD
@@ -125,13 +127,17 @@ fi;
 # $ dpkg -i --ignore-depends=libdbi0  /var/cache/apt/archives/syslog-ng_3.1.1*.deb
 
 InstallTools () {
+	echo 'deb http://backports.debian.org/debian-backports squeeze-backports main contrib' >> /etc/apt/sources.list || {
+		echo "Could not add backports repository line to /etc/apt/sources.list";
+		exit 1;
+	}
 	apt-get update; 
 	apt-get -yq dist-upgrade;
-	if [ $DISTRO == "debian-lenny" ]; then
-		apt-get -yq install vim build-essential syslog-ng psmisc automake ntpdate subversion; 
-	elif [ $DISTRO == "debian-squeeze" ]; then
-		apt-get -yq install vim build-essential psmisc automake ntpdate subversion; 
-	fi
+#	if [ $DISTRO == "debian-lenny" ]; then
+#		apt-get -yq install vim build-essential syslog-ng psmisc automake ntpdate ; 
+#	elif [ $DISTRO == "debian-squeeze" ]; then
+	apt-get -yq install vim build-essential psmisc automake ntpdate git-core; 
+#	fi
 	ntpdate pool.ntp.org 
 	cp $BASE_DIR/evergreen.ld.conf /etc/ld.so.conf.d/
 	ldconfig;
