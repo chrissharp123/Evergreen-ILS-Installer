@@ -147,9 +147,9 @@ InstallTools () {
 # are created with Encoding SQL_ASCII, even though all locale settings (locale, $LANG, etc.) indicate UTF-8.
 # This could be a Squeeze oddity or something going on in this script.
 # Forcing the PG install manually up front avoids the problem.  Go figure.
-	apt-get -yq install "postgresql-$PG_VERSION"
-	echo "Created PG cluster with databases:"
-	su - postgres sh -c "psql -l"
+#	apt-get -yq install postgresql-$PG_VERSION postgresql-client-$PG_VERSION
+#	echo "Created PG cluster with databases:"
+#	su - postgres sh -c "psql -l"
 }
 
 # Create opensrf user and set up environment
@@ -206,7 +206,10 @@ fi
 
 GitEvergreen () {
 if [ ! -d "$EG_DIR" ]; then
-	git clone $GIT_URL
+	ORSF_COMMAND="
+	cd $WORKING_DIR
+	git clone $GIT_URL"
+	su - opensrf sh -c "$OSRF_COMMAND"
 else
 	read -p "$EG_DIR already exists... Continue (y/n)?" ANSWER
 	if [ $ANSWER = "Y" -o $ANSWER = "y" ]; then
@@ -215,9 +218,10 @@ else
 		echo "Exiting..." && exit 1;
 	fi	
 fi
+OSRF_COMMAND="
 cd $EG_DIR
-git checkout $SC_BUILD
-
+git checkout $SC_BUILD"
+su - opensrf sh -c "$OSRF_COMMAND"
 }
 
 InstallPreReqs () {	
