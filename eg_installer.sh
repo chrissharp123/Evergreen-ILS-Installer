@@ -28,11 +28,11 @@ echo
 # we manually ask for these parameters without any checking, so a typo may = failure of script
 # TODO: work in some regexes to check for proper format (at least) - or a numbered list to select from
 #read -p "Which Linux distribution (currently supported: debian-lenny, debian-squeeze)? " DISTRO
-read -p "Which version of OpenSRF (e.g. '2.0.1')? " OSRF_VERSION
-read -p "Which version of Evergreen-ILS (eg. '2.0.9', '2.1')? " EG_VERSION
+read -p "Which packaged version of OpenSRF (e.g. '2.0.1')? " OSRF_VERSION
+read -p "Which version (Git branch) of Evergreen-ILS (eg. '2.0.9', '2.1')? " EG_VERSION
 read -p "What would you like to use for your Jabber password? " JABBER_PASSWORD
-read -p "What would you like to use for your admin user's name? " ADMIN_USER
-read -p "What would you like your admin user's password to be? " ADMIN_PASS
+read -p "What would you like to use for your Evergreen admin user's name? " ADMIN_USER
+read -p "What would you like your Evergreen admin user's password to be? " ADMIN_PASS
 
 DISTRO='debian-squeeze'
 PG_VERSION="9.0" # as of 2011-10-03
@@ -41,11 +41,13 @@ EG_TGZ="Evergreen-ILS-$EG_VERSION.tar.gz"
 OSRF_URL="http://evergreen-ils.org/downloads/$OSRF_TGZ"
 # we'll change this to work with git instead
 #EG_URL="http://evergreen-ils.org/downloads/$EG_TGZ"
+GIT_URL="git://git.evergreen-ils.org/Evergreen.git"
+DOJO_RELEASE="1.3.3"
 
 # Define some directories
 BASE_DIR=$PWD
 WORKING_DIR="/home/opensrf"
-EG_DIR="$WORKING_DIR/Evergreen-ILS-$EG_VERSION"
+EG_DIR="$WORKING_DIR/Evergreen"
 OSRF_DIR="$WORKING_DIR/opensrf-$OSRF_VERSION"
 SC_BUILD="rel_$(echo $EG_VERSION | tr "." "_")"
 
@@ -136,7 +138,7 @@ InstallTools () {
 #	if [ $DISTRO == "debian-lenny" ]; then
 #		apt-get -yq install vim build-essential syslog-ng psmisc automake ntpdate ; 
 #	elif [ $DISTRO == "debian-squeeze" ]; then
-	apt-get -yq install vim build-essential psmisc automake ntpdate git-core; 
+	 apt-get -yq install vim build-essential autoconf libtool psmisc automake ntpdate git-core; 
 #	fi
 	ntpdate pool.ntp.org 
 	cp $BASE_DIR/evergreen.ld.conf /etc/ld.so.conf.d/
@@ -174,17 +176,15 @@ ConfigCPAN () {
 	fi;
 }
 
-# Check to see if Net::Z3950::SimpleServer is still broken; if so install older version before proceeding
+# Net::Z3950::SimpleServer is still broken, so we install an older version before proceeding
 SimpleServer () {
-	cd
-	if [ ! "$(cpan Net::Z3950::SimpleServer)" ]; then
+	cd /root
 	apt-get install libyaz-dev
 	wget http://search.cpan.org/CPAN/authors/id/M/MI/MIRK/Net-Z3950-SimpleServer-1.12.tar.gz
 	tar xzf Net-Z3950-SimpleServer-1.12.tar.gz
 	cd Net-Z3950-SimpleServer-1.12/
 	perl Makefile.PL
 	make &&	make install
-	fi
 } 
 
 # Install pre-reqs
@@ -195,12 +195,29 @@ if [ ! -f "$WORKING_DIR/$OSRF_TGZ" ]; then
 	tar xzf $OSRF_TGZ;"
 	su - opensrf sh -c "$OSRF_COMMAND"
 fi
-if [ ! -f "$WORKING_DIR/$EG_TGZ" ]; then
-	OSRF_COMMAND="
-	wget $EG_URL;
-	tar xzf $EG_TGZ;"
-	su - opensrf sh -c "$OSRF_COMMAND"
+# we don't want to do this if we're using git...
+#if [ ! -f "$WORKING_DIR/$EG_TGZ" ]; then
+#	OSRF_COMMAND="
+#	wget $EG_URL;
+#	tar xzf $EG_TGZ;"
+#	su - opensrf sh -c "$OSRF_COMMAND"
+#fi
+}
+
+GitEvergreen () {
+if [ ! -d "$EG_DIR" ]; then
+	git clone $GIT_URL
+else
+	read -p "$EG_DIR already exists... Continue (y/n)?" ANSWER
+	if [ $ANSWER = "Y" -o $ANSWER = "y" ]; then
+		echo "Continuing on, then."
+	else
+		echo "Exiting..." && exit 1;
+	fi	
 fi
+cd $EG_DIR
+git checkout $SC_BUILD
+
 }
 
 InstallPreReqs () {	
@@ -209,22 +226,23 @@ cd $OSRF_DIR || {
 	exit 1;
 	}
 make -f src/extras/Makefile.install $DISTRO
-if [ $DISTRO == "debian-lenny" ]; then
-	cd $EG_DIR || {
-		echo "ERROR: Cannot cd to Evergreen-ILS directory.";
-		exit 1;
+#if [ $DISTRO == "debian-lenny" ]; then
+#	cd $EG_DIR || {
+#		echo "ERROR: Cannot cd to Evergreen-ILS directory.";
+#		exit 1;
+#	}
+#	make -f Open-ILS/src/extras/Makefile.install $DISTRO
+#	make -f Open-ILS/src/extras/Makefile.install install_pgsql_server_debs_83
+#elif [ $DISTRO == "debian-squeeze" ]; then
+#	wget 'http://svn.open-ils.org/trac/ILS/export/19421/tags/rel_2_0_1/Open-ILS/src/extras/Makefile.install' -O Makefile.install.ils
+#	make -f Makefile.install.ils $DISTRO
+cd $EG_DIR || {
+	echo "ERROR: Cannot cd to Evergreen-ILS directory.";
+	exit 1;
 	}
-	make -f Open-ILS/src/extras/Makefile.install $DISTRO
-	make -f Open-ILS/src/extras/Makefile.install install_pgsql_server_debs_83
-elif [ $DISTRO == "debian-squeeze" ]; then
-	wget 'http://svn.open-ils.org/trac/ILS/export/19421/tags/rel_2_0_1/Open-ILS/src/extras/Makefile.install' -O Makefile.install.ils
-	make -f Makefile.install.ils $DISTRO
-	cd $EG_DIR || {
-                echo "ERROR: Cannot cd to Evergreen-ILS directory.";
-                exit 1;
-        }
-	make -f Open-ILS/src/extras/Makefile.install install_pgsql_server_debs_84
-fi
+make -f Open-ILS/src/extras/Makefile.install $DISTRO
+make -f Open-ILS/src/extras/Makefile.install install_pgsql_server_debs_`echo $PG_VERSION | sed 's/\.//'`
+#fi
 }
 # Patch Ejabberd and register users
 ConfigEJabberd () {
@@ -259,6 +277,12 @@ InstallOpenSRF () {
 	make install
 }
 
+Autogen () {
+	cd $EG_DIR
+	./autogen.sh
+}
+
+
 InstallEG () {
 	OSRF_COMMAND="
 	cd $EG_DIR;
@@ -282,6 +306,13 @@ InstallEG () {
 		exit 1;
 	}
 }
+
+InstallDojo () {
+	wget http://download.dojotoolkit.org/release-$DOJO_RELEASE/dojo-release-$DOJO_RELEASE.tar.gz
+	tar -C /openils/var/web/js -xzf dojo-release-$DOJO_RELEASE.tar.gz
+	cp -r /openils/var/web/js/dojo-release-$DOJO_RELEASE/* /openils/var/web/js/dojo/.
+}
+
 # give it all to opensrf
 ChownOpenSRF () {
 	chown -R opensrf:opensrf /openils
@@ -290,16 +321,8 @@ ChownOpenSRF () {
 
 
 # Create the DB
-CreateDB () {
+CreateDBUser () {
 	PG_COMMAND="
-	createdb -T template0 -E UNICODE evergreen;
-	createlang plperl   evergreen;
-	createlang plperlu  evergreen;
-	createlang plpgsql  evergreen;
-	psql -f /usr/share/postgresql/$PG_VERSION/contrib/tablefunc.sql evergreen;
-	psql -f /usr/share/postgresql/$PG_VERSION/contrib/tsearch2.sql  evergreen;
-	psql -f /usr/share/postgresql/$PG_VERSION/contrib/pgxml.sql     evergreen;
-	echo -e '\n\nPlease enter a password for the evergreen database user.  If you do not want to edit configs, use \"evergreen\"\n'
 	createuser -P -s evergreen;"
 	su - postgres sh -c "$PG_COMMAND"
 }
@@ -309,7 +332,7 @@ CreateDB () {
 DBSchema () {
 	cd $EG_DIR;
 	perl Open-ILS/src/support-scripts/eg_db_config.pl --update-config \
-    		--service all --create-schema --create-bootstrap --create-offline \
+    		--service all --create-database --create-schema --create-offline \
    		 --user evergreen --password evergreen --hostname localhost --database evergreen \
 		 --admin-user $ADMIN_USER --admin-pass $ADMIN_PASS
 }
@@ -321,6 +344,8 @@ cp Open-ILS/examples/apache/eg_vhost.conf /etc/apache2/
 cp Open-ILS/examples/apache/startup.pl    /etc/apache2/
 if [ ! -d /etc/apache2/ssl ] ; then
     mkdir /etc/apache2/ssl
+else
+    echo -e "\nApache SSL directory already exists.  Skipping...\n";
 fi
 if [ ! -f /etc/apache2/ssl/server.key ] ; then
     echo -e "\n\nConfiguring a new temporary SSL certificate....\n";
@@ -354,12 +379,15 @@ CreateOpenSRF
 ConfigCPAN
 SimpleServer
 WgetTar
+GitEvergreen
 InstallPreReqs
 ConfigEJabberd
 InstallOpenSRF
+Autogen
 InstallEG
+InstallDojo
 ChownOpenSRF
-CreateDB
+CreateDBUser
 DBSchema
 ConfigApache
 
